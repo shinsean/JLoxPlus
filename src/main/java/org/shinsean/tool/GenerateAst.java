@@ -34,6 +34,8 @@ public class GenerateAst {
         writer.println();
         writer.println("abstract class " + baseName + " {");
 
+        defineVisitor(writer, baseName, types);
+
         // The AST classes.
         for (String type : types) {
             // TODO: Save the type.split output as a single variable and reuse it.
@@ -41,8 +43,27 @@ public class GenerateAst {
             String fields = type.split(":")[1].trim();
             defineType(writer, baseName, className, fields);
         }
+
+        // The base accept() method.
+        writer.println();
+        // TODO: Move this so that it is written above the nested static classes.
+        writer.println("    abstract <R> R accept(Visitor<R> visitor);");
+
         writer.println("}");
         writer.close();
+    }
+
+    private static void defineVisitor(
+            PrintWriter writer, String baseName, List<String> types) {
+        writer.println("    interface Visitor<R> {");
+
+        for (String type : types) {
+            String typeName = type.split(":")[0].trim();
+            writer.println("        R visit" + typeName + baseName + "(" +
+                    typeName + " " + baseName.toLowerCase() + ");");
+        }
+
+        writer.println("    }");
     }
 
     private static void defineType(
@@ -62,6 +83,14 @@ public class GenerateAst {
 
         writer.println("        }");
 
+        // Visitor pattern.
+        writer.println();
+        writer.println("        @Override");
+        writer.println("        <R> R accept(Visitor<R> visitor) {");
+        writer.println("            return visitor.visit" +
+                className + baseName + "(this);");
+        writer.println("        }");
+
         // TODO: Move the initial variable definitions to be above the class constructor.
         // Fields.
         writer.println();
@@ -70,5 +99,7 @@ public class GenerateAst {
         }
 
         writer.println("    }");
+        // TODO: Enable this later to make the output Expr.java look a lot cleaner.
+        // writer.println();
     }
 }
