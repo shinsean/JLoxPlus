@@ -202,5 +202,33 @@ class Parser {
         return tokens.get(current - 1);
     }
 
+    private ParseError error(Token token, String message) {
+        Lox.error(token, message);
+        return new ParseError();
+    }
 
+    private void synchronize() {
+        advance();
+
+        while (!isAtEnd()) {
+            // If the currently being consumed token is a semicolon, we break out.
+            if (previous().type == SEMICOLON) return;
+
+            // If the current unconsumed token is the start of a statement, we break out.
+            switch (peek().type) {
+                // TODO: Replace intentional fall-through with actual statements.
+                case CLASS:
+                case FUN:
+                case VAR:
+                case FOR:
+                case IF:
+                case WHILE:
+                case PRINT:
+                case RETURN:
+                    return;
+            }
+
+            advance();
+        }
+    }
 }
