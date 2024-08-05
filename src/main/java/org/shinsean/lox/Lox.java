@@ -9,7 +9,9 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class Lox {
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
 
     public static void main(String[] args) throws IOException {
 
@@ -45,6 +47,7 @@ public class Lox {
 
         // Indicate an error in the exit code.
         if (hadError) System.exit(65);
+        if (hadRuntimeError) System.exit(70);
     }
 
     /**
@@ -60,6 +63,8 @@ public class Lox {
         // and BufferedReader then provides an efficient buffered stream of chars into the program.
         BufferedReader reader = new BufferedReader(input);
 
+        // TODO: Add code that sets runTimeError to false after line execution similar to how hadError is set to false
+        //  for consistency's sake (assuming that doesn't break anything).
         // This is basically an infinite while loop that breaks if
         // an empty line is entered.
         for (;;) {
@@ -86,7 +91,10 @@ public class Lox {
         // Stop if there was a syntax error.
         if (hadError) return;
 
-        System.out.println(new AstPrinter().print(expression));
+        interpreter.interpret(expression);
+
+        // Code for printing out the AST.
+        //System.out.println(new AstPrinter().print(expression));
 
         // Code for printing out the lexed tokens.
         //for (Token token : tokens) {
@@ -122,6 +130,12 @@ public class Lox {
         } else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
+    }
+
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() +
+                "\n[line " + error.token.line + "]");
+        hadRuntimeError = true;
     }
 
 }
