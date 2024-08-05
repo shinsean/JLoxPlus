@@ -1,2 +1,2 @@
-# YAJLox
-Yet Another JLox implementation, an implementation of the Lox language specifications in Java derived from the Nystrom JLox implementation.
+# JLoxPlus
+JLoxPlus, an interpreter written in Java implementing the Lox language specifications derived from the Nystrom JLox implementation.
