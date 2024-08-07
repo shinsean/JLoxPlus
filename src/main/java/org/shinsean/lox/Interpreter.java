@@ -3,6 +3,7 @@ package org.shinsean.lox;
 import java.util.List;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private Environment environment = new Environment();
 
     void interpret(List<Stmt> statements) {
         try {
@@ -50,6 +51,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         // Unreachable, since the parser would not have classed something as a unary unless
         // there was a negation boolean or negation number operator.
         return null;
+    }
+
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return environment.get(expr.name);
     }
 
     @Override
@@ -160,10 +166,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return expr.accept(this);
     }
 
+    // TODO: Move this above all of the visit methods.
     private void execute(Stmt stmt) {
         stmt.accept(this);
     }
 
+    // TODO: Rearrange stmt visitor methods to align with ordering in Parser.java and Stmt.java
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         // Since this line is an expression statement, it should be getting discarded.
@@ -175,6 +183,17 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = evaluate(stmt.expression);
         System.out.println(stringify(value));
+        return null;
+    }
+
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) {
+            value = evaluate(stmt.initializer);
+        }
+
+        environment.define(stmt.name.lexeme, value);
         return null;
     }
 }
