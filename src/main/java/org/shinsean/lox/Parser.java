@@ -67,7 +67,40 @@ class Parser {
     }
 
     private Expr expression() {
-        return equality();
+        return assignment();
+    }
+
+    private Expr assignment() {
+        // The way this function works is that no matter what, the current token is
+        // sent down the parsing chain and parsed fully.
+        // Then, we check if the next token is an equal sign.
+        // If so, we essentially assume that whatever was to the left of the equal sign
+        // was a valid assignment target (e.g. variable expression, field expression).
+        // Though, since we want to gracefully control the errors thrown, even
+        // though we "assume" it, we still check to make sure that the expression on the
+        // right was a variable expression. If it was valid, we then create a new
+        // variable name to hold on to the name of the variable expression and then create a new
+        // assignment expression node with it, discarding the variable expression node.
+        // Then, in the interpreter, we can treat variable expression nodes and variable
+        // assignment nodes differently.
+        // However, if the next sign was not an equal sign, we just return whatever we evaluated.
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable)expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            // While we report the error if the left-hand side is not a valid assignment target,
+            // since we can still keep parsing, we don't throw the error and enter panic mode to synchronize.
+            error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     // TODO: Create a helper method for handling the parsing of left-associative
