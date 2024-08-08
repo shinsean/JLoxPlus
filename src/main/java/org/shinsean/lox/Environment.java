@@ -4,12 +4,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Environment {
+    final Environment enclosing;
     private final Map<String, Object> values = new HashMap<>();
+
+    Environment() {
+        enclosing = null;
+    }
+
+    Environment(Environment enclosing) {
+        this.enclosing = enclosing;
+    }
 
     Object get(Token name) {
         if (values.containsKey(name.lexeme)) {
             return values.get(name.lexeme);
         }
+
+        // If the variable we are looking up does not exist in this context
+        // and at least one enclosing exists, we recursively traverse all enclosings
+        // up the cactus stack to try an assignment. This implements Lox's scoping behavior.
+        if (enclosing != null) return enclosing.get(name);
 
         throw new RuntimeError(name,
                 "Undefined variable '" + name.lexeme + "'.");
@@ -19,6 +33,14 @@ public class Environment {
     void assign(Token name, Object value) {
         if (values.containsKey(name.lexeme)) {
             values.put(name.lexeme, value);
+            return;
+        }
+
+        // Similarly to variable lookup, if the variable we are assigning does not exist
+        // in this context and at least one enclosing exists, we recursively traverse all enclosings
+        // up the cactus stack to try an assignment. This implements Lox's scoping behavior.
+        if (enclosing != null) {
+            enclosing.assign(name, value);
             return;
         }
 
