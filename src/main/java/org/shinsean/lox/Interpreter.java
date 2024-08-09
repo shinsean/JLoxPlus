@@ -23,6 +23,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
+
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left)) return left;
+        } else {
+            if (!isTruthy(left)) return left;
+        }
+
+        return evaluate((expr.right));
+    }
+
+    @Override
     public Object visitGroupingExpr(Expr.Grouping expr) {
         // Since a grouping node is basically just a container containing
         // another node inside of it, we just pass in the contained node
@@ -196,6 +209,18 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         // Since this line is an expression statement, it should be getting discarded.
         evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        // TODO: Rework this if statement to be less clear at first glance.
+        //  Though, the way I'm thinking of reworking this does mean it is slightly less performant.
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
         return null;
     }
 
