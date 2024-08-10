@@ -242,6 +242,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body);
+        }
+
+        return null;
+    }
+
     // TODO: Consider position of this method. It does make sense to have it after visitVarStmt,
     //  but it also makes sense to group it with the other expressions.
     @Override
