@@ -1,6 +1,7 @@
 package org.shinsean.lox;
 
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 
 // TODO: Determine whether we're going to keep statically importing this or not.
@@ -37,11 +38,72 @@ class Parser {
     }
 
     private Stmt statement() {
+        if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
+    }
+
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        Stmt body = statement();
+
+        /* We will use desugaring/caramelizing for loops into while loops to actually implement them.
+        Functionally, the code "for (var i = 0; i < 10; i = i + 1) print i;" is equivalent to
+        "{
+            var i = 0
+            while (i < 10) {
+                print i;
+                i = i + 1
+            }
+        }"
+        So, whenever we have a for loop, we essentially turn it into a block statement that has been structured like
+        the while loop. Using this, we roll up the body and the increment into a block statement, put that as the statement
+        in a while loop rolled together with the condition, and roll the initializer and the while loop in a block statement.
+        */
+
+        if (increment != null) {
+            body = new Stmt.Block(
+                    Arrays.asList(
+                            body,
+                            new Stmt.Expression(increment)
+                    )
+            );
+        }
+
+        if (condition == null) condition = new Expr.Literal(true);
+        body = new Stmt.While(condition, body);
+
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+        return body;
     }
 
     private Stmt ifStatement() {
@@ -75,6 +137,15 @@ class Parser {
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
         return new Stmt.Var(name, initializer);
+    }
+
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
+        Stmt body = statement();
+
+        return new Stmt.While(condition, body);
     }
 
     private Stmt expressionStatement() {
