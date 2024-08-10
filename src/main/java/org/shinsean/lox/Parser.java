@@ -29,6 +29,7 @@ class Parser {
     private Stmt declaration() {
         try {
             if (match(VAR)) return varDeclaration();
+            if (match(FUN)) return function("function");
 
             return statement();
         } catch (ParseError error) {
@@ -152,6 +153,37 @@ class Parser {
         Expr expr = expression();
         consume(SEMICOLON, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
+    }
+
+    // TODO: Rename the String kind parameter to String type or String funcType.
+    private Stmt.Function function(String kind) {
+        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        List<Token> parameters = new ArrayList<>();
+
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    // We intentionally don't throw the error for similar reasons we didn't
+                    // throw the error in other places.
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+
+                // Note: This being an IDENTIFIER instead of any of the literal types is intentional.
+                // As this is a function declaration, you want your parameters to be named, because
+                // you wouldn't be able to do anything with them otherwise. Function calls can use literals.
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        // Note: This does mean that all function declarations must use block statements instead of just
+        // any statement for the body trailing after the name and parameter declaration.
+        // Consider changing this to a more general statement body. Though, that does have pros and cons.
+        consume(LEFT_BRACE, "Expect '{' before " + kind + "body.");
+        List<Stmt> body = block();
+
+        return new Stmt.Function(name, parameters, body);
     }
 
     private List<Stmt> block() {
@@ -295,7 +327,40 @@ class Parser {
             return new Expr.Unary(operator, right);
         }
 
-        return primary();
+        return call();
+    }
+
+    private Expr call() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    private Expr finishCall(Expr callee) {
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size() >= 255) {
+                    // We intentionally do not throw the error as throwing the error kicks
+                    // the parser into panic mode to start recovery and sync, which we do
+                    // need for this error. We can continue along, just having flagged this as an error.
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Expr.Call(callee, paren, arguments);
     }
 
     private Expr primary() {
