@@ -20,7 +20,15 @@ public class LoxFunction implements LoxCallable {
             environment.define(declaration.params.get(i).lexeme, arguments.get(i));
         }
 
-        interpreter.executeBlock(declaration.body, environment);
+        // Utilizing the Return runtime exception to handle returning and control flow.
+        // If there is an explicit return value, the catch block is guaranteed to trigger
+        // with returnValue containing the desired return value. If there is no explicit
+        // return value, the catch block will not trigger, leading to the "return null;" to trigger.
+        try {
+            interpreter.executeBlock(declaration.body, environment);
+        } catch (Return returnValue) {
+            return returnValue.value;
+        }
         return null;
     }
 
