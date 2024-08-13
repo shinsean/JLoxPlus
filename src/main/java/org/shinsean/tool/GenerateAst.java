@@ -24,6 +24,7 @@ public class GenerateAst {
                 "Grouping   : Expr expression",
                 "Literal    : Object value",
                 "Logical    : Expr left, Token operator, Expr right",
+                "Super      : Token keyword, Token method",
                 "This       : Token keyword",
                 "Set        : Expr object, Token name, Expr value",
                 "Unary      : Token operator, Expr right",
@@ -33,10 +34,10 @@ public class GenerateAst {
         // TODO: Add support for else-if statements.
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Block      : List<Stmt> statements",
-                "Class      : Token name, List<Stmt.Function> methods",
-                "Expression : Expr expression",
                 // TODO: I'm pretty sure the string concats here aren't necessary.
                 //  I think they're only there in the reference impl because of condensing concerns.
+                "Class      : Token name, Expr.Variable superclass," + " List<Stmt.Function> methods",
+                "Expression : Expr expression",
                 "Function   : Token name, List<Token> params," + " List<Stmt> body",
                 "If         : Expr condition, Stmt thenBranch," + " Stmt elseBranch",
                 "Print      : Expr expression",
