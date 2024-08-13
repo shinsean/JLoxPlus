@@ -41,6 +41,17 @@ class Parser {
 
     private Stmt classDeclaration() {
         Token name = consume(IDENTIFIER, "Expect class name.");
+
+        // TODO: Make all classes inherit from a base class in order to allow
+        //  users to better handle basic behaviors like string conversion.
+        //  To my understanding, all we would need to do is have an else clause here
+        //  that sets the superclass to be the base class.
+        Expr.Variable superclass = null;
+        if (match(LESS)) {
+            consume(IDENTIFIER, "Expect superclass name.");
+            superclass = new Expr.Variable(previous());
+        }
+
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
         List<Stmt.Function> methods = new ArrayList<>();
@@ -52,7 +63,7 @@ class Parser {
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, superclass, methods);
     }
 
     private Stmt statement() {
@@ -419,6 +430,14 @@ class Parser {
         }
 
         if (match(THIS)) return new Expr.This(previous());
+
+        if (match(SUPER)) {
+            Token keyword = previous();
+            consume(DOT, "Expect '.' after 'super'.");
+            Token method = consume(IDENTIFIER,
+                    "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
+        }
 
         throw error(peek(), "Expect expression.");
     }
