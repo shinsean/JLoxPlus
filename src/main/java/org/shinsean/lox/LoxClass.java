@@ -5,16 +5,27 @@ import java.util.Map;
 
 public class LoxClass implements LoxCallable {
     final String name;
+    final LoxClass superclass;
     private final Map<String, LoxFunction> methods;
 
-    LoxClass(String name, Map<String, LoxFunction> methods) {
+    LoxClass(String name, LoxClass superclass, Map<String, LoxFunction> methods) {
         this.name = name;
+        this.superclass = superclass;
         this.methods = methods;
     }
 
     LoxFunction findMethod(String name) {
+        // Check if the class has the requested method.
+        // If so, return it.
         if (methods.containsKey(name)) {
             return methods.get(name);
+        }
+
+        // If the class did not have the requested method directly, check its superclass.
+        // If the superclass has it, return it. If it does not, it will call the
+        // superclass's superclass and recursively check until it finds it or fails to and returns null.
+        if (superclass != null) {
+            return superclass.findMethod(name);
         }
 
         return null;
